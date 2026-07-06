@@ -10,20 +10,26 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class DashboardServiceImpl implements DashboardService {
 
     private final DashboardRepository repository;
 
     @Override
+    @Cacheable(value = "dashboardKpis", key = "#startDate + '-' + #endDate + '-' + #territoryId + '-' + #categoryName")
     public DashboardKpiProjection getDashboardKpis(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName) {
         return repository.getDashboardKpis(startDate, endDate, territoryId, categoryName);
     }
 
     @Override
+    @Cacheable(value = "monthlySales", key = "#startDate + '-' + #endDate + '-' + #territoryId + '-' + #categoryName")
     public List<MonthlySalesDTO> getMonthlySales(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName) {
         return repository.getMonthlySales(startDate, endDate, territoryId, categoryName)
                 .stream()
@@ -35,6 +41,7 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
+    @Cacheable(value = "salesByCategory", key = "#startDate + '-' + #endDate + '-' + #territoryId + '-' + #categoryName")
     public List<SalesByCategoryDTO> getSalesByCategory(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName) {
         return repository.getSalesByCategory(startDate, endDate, territoryId, categoryName)
                 .stream()
@@ -46,6 +53,7 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
+    @Cacheable(value = "salesByTerritory", key = "#startDate + '-' + #endDate + '-' + #territoryId + '-' + #categoryName")
     public List<SalesByTerritoryDTO> getSalesByTerritory(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName) {
         return repository.getSalesByTerritory(startDate, endDate, territoryId, categoryName)
                 .stream()
@@ -57,6 +65,7 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
+    @Cacheable(value = "topProducts", key = "#startDate + '-' + #endDate + '-' + #territoryId + '-' + #categoryName")
     public List<TopProductDTO> getTopProducts(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName) {
         return repository.getTopProducts(startDate, endDate, territoryId, categoryName)
                 .stream()
@@ -70,6 +79,7 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
+    @Cacheable(value = "topCustomers", key = "#startDate + '-' + #endDate + '-' + #territoryId + '-' + #categoryName")
     public List<TopCustomerDTO> getTopCustomers(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName) {
         return repository.getTopCustomers(startDate, endDate, territoryId, categoryName)
                 .stream()
@@ -83,9 +93,22 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
-    public List<SalesTrendDTO> getSalesTrend(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName) {
-        return repository.getSalesTrend(startDate, endDate, territoryId, categoryName)
-                .stream()
+    @Cacheable(value = "salesTrend", key = "#startDate + '-' + #endDate + '-' + #territoryId + '-' + #categoryName + '-' + #granularity")
+    public List<SalesTrendDTO> getSalesTrend(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName, String granularity) {
+        List<Object[]> results;
+        if ("year".equalsIgnoreCase(granularity)) {
+            results = repository.getSalesTrendByYear(startDate, endDate, territoryId, categoryName);
+        } else if ("quarter".equalsIgnoreCase(granularity)) {
+            results = repository.getSalesTrendByQuarter(startDate, endDate, territoryId, categoryName);
+        } else if ("week".equalsIgnoreCase(granularity)) {
+            results = repository.getSalesTrendByWeek(startDate, endDate, territoryId, categoryName);
+        } else if ("day".equalsIgnoreCase(granularity)) {
+            results = repository.getSalesTrendByDay(startDate, endDate, territoryId, categoryName);
+        } else {
+            results = repository.getSalesTrend(startDate, endDate, territoryId, categoryName);
+        }
+        
+        return results.stream()
                 .map(row -> SalesTrendDTO.builder()
                         .period((String) row[0])
                         .revenue(row[1] != null ? new BigDecimal(row[1].toString()) : BigDecimal.ZERO)
@@ -95,6 +118,7 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
+    @Cacheable(value = "productPerformance", key = "#startDate + '-' + #endDate + '-' + #territoryId + '-' + #categoryName")
     public List<ProductPerformanceDTO> getProductPerformance(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName) {
         return repository.getProductPerformance(startDate, endDate, territoryId, categoryName)
                 .stream()
@@ -112,6 +136,7 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
+    @Cacheable(value = "salesChannels", key = "#startDate + '-' + #endDate + '-' + #territoryId + '-' + #categoryName")
     public List<SalesChannelDTO> getSalesChannels(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName) {
         return repository.getSalesChannels(startDate, endDate, territoryId, categoryName)
                 .stream()
@@ -124,6 +149,7 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
+    @Cacheable(value = "salesPersonPerformance", key = "#startDate + '-' + #endDate + '-' + #territoryId + '-' + #categoryName")
     public List<SalesPersonPerformanceDTO> getSalesPersonPerformance(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName) {
         return repository.getSalesPersonPerformance(startDate, endDate, territoryId, categoryName)
                 .stream()
@@ -138,6 +164,7 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
+    @Cacheable(value = "subcategoryMargins", key = "#startDate + '-' + #endDate + '-' + #territoryId + '-' + #categoryName")
     public List<SubcategoryMarginDTO> getSubcategoryMargins(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName) {
         return repository.getSubcategoryMargins(startDate, endDate, territoryId, categoryName)
                 .stream()
@@ -151,6 +178,7 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
+    @Cacheable(value = "olapFacts", key = "#startDate + '-' + #endDate + '-' + #territoryId + '-' + #categoryName")
     public List<OlapFactDTO> getOlapFacts(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName) {
         return repository.getOlapFacts(startDate, endDate, territoryId, categoryName)
                 .stream()
@@ -164,6 +192,24 @@ public class DashboardServiceImpl implements DashboardService {
                         .orders(row[6] != null ? Long.valueOf(row[6].toString()) : 0L)
                         .build())
                 .toList();
+    }
+
+    @Override
+    @Cacheable(value = "filterOptions")
+    public FilterOptionsDTO getFilterOptions() {
+        List<TerritoryOptionDTO> territories = repository.getAllTerritoryOptions().stream()
+                .map(row -> TerritoryOptionDTO.builder()
+                        .id(row[0] != null ? Integer.valueOf(row[0].toString()) : null)
+                        .name((String) row[1])
+                        .build())
+                .collect(Collectors.toList());
+
+        List<String> categories = repository.getAllCategoryOptions();
+
+        return FilterOptionsDTO.builder()
+                .territories(territories)
+                .categories(categories)
+                .build();
     }
 
 }

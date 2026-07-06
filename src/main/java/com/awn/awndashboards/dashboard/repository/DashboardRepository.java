@@ -71,7 +71,6 @@ public interface DashboardRepository extends JpaRepository<Product,Integer>{
         WHERE (cast(:startDate as timestamp) IS NULL OR soh.orderdate >= cast(:startDate as timestamp))
           AND (cast(:endDate as timestamp) IS NULL OR soh.orderdate <= cast(:endDate as timestamp))
           AND (cast(:territoryId as integer) IS NULL OR soh.territoryid = cast(:territoryId as integer))
-          AND (cast(:categoryName as varchar) IS NULL OR pc.name = cast(:categoryName as varchar))
         GROUP BY pc.name
         ORDER BY sales DESC
         """, nativeQuery=true)
@@ -93,7 +92,6 @@ public interface DashboardRepository extends JpaRepository<Product,Integer>{
         LEFT JOIN production.productcategory pc ON psc.productcategoryid = pc.productcategoryid
         WHERE (cast(:startDate as timestamp) IS NULL OR soh.orderdate >= cast(:startDate as timestamp))
           AND (cast(:endDate as timestamp) IS NULL OR soh.orderdate <= cast(:endDate as timestamp))
-          AND (cast(:territoryId as integer) IS NULL OR soh.territoryid = cast(:territoryId as integer))
           AND (cast(:categoryName as varchar) IS NULL OR pc.name = cast(:categoryName as varchar))
         GROUP BY st.name
         ORDER BY sales DESC
@@ -306,6 +304,104 @@ public interface DashboardRepository extends JpaRepository<Product,Integer>{
         ORDER BY month ASC
         """, nativeQuery=true)
     List<Object[]> getOlapFacts(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("territoryId") Integer territoryId,
+            @Param("categoryName") String categoryName);
+
+    @Query(value = "SELECT territoryid, name FROM sales.salesterritory ORDER BY name", nativeQuery = true)
+    List<Object[]> getAllTerritoryOptions();
+
+    @Query(value = "SELECT DISTINCT pc.name FROM production.productcategory pc ORDER BY pc.name", nativeQuery = true)
+    List<String> getAllCategoryOptions();
+
+    @Query(value="""
+        SELECT 
+            TO_CHAR(soh.orderdate, 'YYYY "Q"Q') AS period,
+            COALESCE(SUM(sod.linetotal), 0) AS revenue,
+            COUNT(DISTINCT soh.salesorderid) AS orderCount
+        FROM sales.salesorderheader soh
+        JOIN sales.salesorderdetail sod ON soh.salesorderid = sod.salesorderid
+        JOIN production.product p ON sod.productid = p.productid
+        LEFT JOIN production.productsubcategory psc ON p.productsubcategoryid = psc.productsubcategoryid
+        LEFT JOIN production.productcategory pc ON psc.productcategoryid = pc.productcategoryid
+        WHERE (cast(:startDate as timestamp) IS NULL OR soh.orderdate >= cast(:startDate as timestamp))
+          AND (cast(:endDate as timestamp) IS NULL OR soh.orderdate <= cast(:endDate as timestamp))
+          AND (cast(:territoryId as integer) IS NULL OR soh.territoryid = cast(:territoryId as integer))
+          AND (cast(:categoryName as varchar) IS NULL OR pc.name = cast(:categoryName as varchar))
+        GROUP BY DATE_TRUNC('quarter', soh.orderdate), TO_CHAR(soh.orderdate, 'YYYY "Q"Q')
+        ORDER BY DATE_TRUNC('quarter', soh.orderdate)
+        """, nativeQuery=true)
+    List<Object[]> getSalesTrendByQuarter(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("territoryId") Integer territoryId,
+            @Param("categoryName") String categoryName);
+
+    @Query(value="""
+        SELECT 
+            TO_CHAR(soh.orderdate, 'IYYY-IW') AS period,
+            COALESCE(SUM(sod.linetotal), 0) AS revenue,
+            COUNT(DISTINCT soh.salesorderid) AS orderCount
+        FROM sales.salesorderheader soh
+        JOIN sales.salesorderdetail sod ON soh.salesorderid = sod.salesorderid
+        JOIN production.product p ON sod.productid = p.productid
+        LEFT JOIN production.productsubcategory psc ON p.productsubcategoryid = psc.productsubcategoryid
+        LEFT JOIN production.productcategory pc ON psc.productcategoryid = pc.productcategoryid
+        WHERE (cast(:startDate as timestamp) IS NULL OR soh.orderdate >= cast(:startDate as timestamp))
+          AND (cast(:endDate as timestamp) IS NULL OR soh.orderdate <= cast(:endDate as timestamp))
+          AND (cast(:territoryId as integer) IS NULL OR soh.territoryid = cast(:territoryId as integer))
+          AND (cast(:categoryName as varchar) IS NULL OR pc.name = cast(:categoryName as varchar))
+        GROUP BY DATE_TRUNC('week', soh.orderdate), TO_CHAR(soh.orderdate, 'IYYY-IW')
+        ORDER BY DATE_TRUNC('week', soh.orderdate)
+        """, nativeQuery=true)
+    List<Object[]> getSalesTrendByWeek(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("territoryId") Integer territoryId,
+            @Param("categoryName") String categoryName);
+
+    @Query(value="""
+        SELECT 
+            TO_CHAR(soh.orderdate, 'YYYY') AS period,
+            COALESCE(SUM(sod.linetotal), 0) AS revenue,
+            COUNT(DISTINCT soh.salesorderid) AS orderCount
+        FROM sales.salesorderheader soh
+        JOIN sales.salesorderdetail sod ON soh.salesorderid = sod.salesorderid
+        JOIN production.product p ON sod.productid = p.productid
+        LEFT JOIN production.productsubcategory psc ON p.productsubcategoryid = psc.productsubcategoryid
+        LEFT JOIN production.productcategory pc ON psc.productcategoryid = pc.productcategoryid
+        WHERE (cast(:startDate as timestamp) IS NULL OR soh.orderdate >= cast(:startDate as timestamp))
+          AND (cast(:endDate as timestamp) IS NULL OR soh.orderdate <= cast(:endDate as timestamp))
+          AND (cast(:territoryId as integer) IS NULL OR soh.territoryid = cast(:territoryId as integer))
+          AND (cast(:categoryName as varchar) IS NULL OR pc.name = cast(:categoryName as varchar))
+        GROUP BY DATE_TRUNC('year', soh.orderdate), TO_CHAR(soh.orderdate, 'YYYY')
+        ORDER BY DATE_TRUNC('year', soh.orderdate)
+        """, nativeQuery=true)
+    List<Object[]> getSalesTrendByYear(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("territoryId") Integer territoryId,
+            @Param("categoryName") String categoryName);
+
+    @Query(value="""
+        SELECT 
+            TO_CHAR(soh.orderdate, 'YYYY-MM-DD') AS period,
+            COALESCE(SUM(sod.linetotal), 0) AS revenue,
+            COUNT(DISTINCT soh.salesorderid) AS orderCount
+        FROM sales.salesorderheader soh
+        JOIN sales.salesorderdetail sod ON soh.salesorderid = sod.salesorderid
+        JOIN production.product p ON sod.productid = p.productid
+        LEFT JOIN production.productsubcategory psc ON p.productsubcategoryid = psc.productsubcategoryid
+        LEFT JOIN production.productcategory pc ON psc.productcategoryid = pc.productcategoryid
+        WHERE (cast(:startDate as timestamp) IS NULL OR soh.orderdate >= cast(:startDate as timestamp))
+          AND (cast(:endDate as timestamp) IS NULL OR soh.orderdate <= cast(:endDate as timestamp))
+          AND (cast(:territoryId as integer) IS NULL OR soh.territoryid = cast(:territoryId as integer))
+          AND (cast(:categoryName as varchar) IS NULL OR pc.name = cast(:categoryName as varchar))
+        GROUP BY DATE_TRUNC('day', soh.orderdate), TO_CHAR(soh.orderdate, 'YYYY-MM-DD')
+        ORDER BY DATE_TRUNC('day', soh.orderdate)
+        """, nativeQuery=true)
+    List<Object[]> getSalesTrendByDay(
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
             @Param("territoryId") Integer territoryId,

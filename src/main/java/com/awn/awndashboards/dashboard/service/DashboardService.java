@@ -21,7 +21,7 @@ public interface DashboardService {
 
     List<TopCustomerDTO> getTopCustomers(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName);
 
-    List<SalesTrendDTO> getSalesTrend(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName);
+    List<SalesTrendDTO> getSalesTrend(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName, String granularity);
 
     List<ProductPerformanceDTO> getProductPerformance(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName);
 
@@ -32,4 +32,6 @@ public interface DashboardService {
     List<SubcategoryMarginDTO> getSubcategoryMargins(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName);
 
     List<OlapFactDTO> getOlapFacts(LocalDateTime startDate, LocalDateTime endDate, Integer territoryId, String categoryName);
+
+    FilterOptionsDTO getFilterOptions();
 }

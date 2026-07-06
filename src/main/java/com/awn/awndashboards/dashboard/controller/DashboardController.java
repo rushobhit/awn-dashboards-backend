@@ -78,8 +78,9 @@ public class DashboardController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @RequestParam(required = false) Integer territoryId,
-            @RequestParam(required = false) String categoryName) {
-        return dashboardService.getSalesTrend(startDate, endDate, territoryId, categoryName);
+            @RequestParam(required = false) String categoryName,
+            @RequestParam(required = false, defaultValue = "month") String granularity) {
+        return dashboardService.getSalesTrend(startDate, endDate, territoryId, categoryName, granularity);
     }
 
     @GetMapping("/product-performance")
@@ -125,6 +126,11 @@ public class DashboardController {
             @RequestParam(required = false) Integer territoryId,
             @RequestParam(required = false) String categoryName) {
         return dashboardService.getOlapFacts(startDate, endDate, territoryId, categoryName);
+    }
+
+    @GetMapping("/filter-options")
+    public FilterOptionsDTO getFilterOptions() {
+        return dashboardService.getFilterOptions();
     }
 
 }
